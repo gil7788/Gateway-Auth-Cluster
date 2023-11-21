@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-deployment
+  labels:
+    app: fastapi-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-deployment
+  template:
+    metadata:
+      name: fastapi-deployment
+      labels:
+        app: fastapi-deployment
+    spec:
+      containers:
+        - name: fastapi-deployment
+          image: gil7788/fastapi-demo:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+      restartPolicy: Always
+
