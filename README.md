@@ -92,7 +92,31 @@ spec:
 
 The `targetPort` is set to 8000, which is the port your application is running on. The `port` is the port that the service will expose, which is 5000 in this case. The `type` is set to `NodePort`, which means that the service will be accessible on a static port on each Node in your cluster.
 
+## Tests
+
+The tests for this application are written using FastAPI's test client and Python's built-in unittest module. The test client allows you to make requests to your application and check the responses.
+
+### Running the Tests
+
+To run the tests, you will need to have Python and the necessary dependencies installed on your machine. If you have not done so already, you can install the dependencies using pip and the `requirements.txt` file:
+
+```bash
+pip install -r requirements.txt
+```
+
+Once the dependencies are installed, you can run the tests using the following command:
+
+```bash
+python -m unittest discover -s tests
+```
+
+This command will discover and run all tests in the `tests` directory.
+
+
 ## Conclusion
 
 This project demonstrates how to package a FastAPI application in a Docker container and deploy it on a Kubernetes cluster. It also shows how to access the application from your local machine.
+<<<<<<< HEAD
 >>>>>>> 5385609 (Update README file)
+=======
+>>>>>>> 92cc113 (Add App Tests)
