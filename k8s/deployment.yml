@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+  labels:
+    app: auth-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-deployment
+  template:
+    metadata:
+      name: auth-deployment
+      labels:
+        app: auth-deployment
+    spec:
+      containers:
+        - name: auth-deployment
+          image: gil7788/auth-demo:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+      restartPolicy: Always
+
