@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fastapi-deployment
+  name: auth-deployment
   labels:
-    app: fastapi-deployment
+    app: auth-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: fastapi-deployment
+      app: auth-deployment
   template:
     metadata:
-      name: fastapi-deployment
+      name: auth-deployment
       labels:
-        app: fastapi-deployment
+        app: auth-deployment
     spec:
       containers:
-        - name: fastapi-deployment
-          image: gil7788/fastapi-demo:latest
+        - name: auth-deployment
+          image: gil7788/auth-demo:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
