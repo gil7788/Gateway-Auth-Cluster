@@ -1,8 +1,8 @@
 import httpx
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient, Response
-from gateway.main import app  # Import your FastAPI instance
+from httpx import Response
+from gateway.main import app
 
 
 # Fixture for TestClient
