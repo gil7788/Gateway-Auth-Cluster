@@ -7,16 +7,18 @@ from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
 
 from sqlalchemy_utils import database_exists, create_database, drop_database
 from fastapi.testclient import TestClient
-from auth.main import app, get_database_url, create_access_token, SECRET_KEY, ALGORITHM
+from auth.main import app, get_database_url, create_access_token, SECRET_KEY, ALGORITHM, verify_password
 from dotenv import load_dotenv
+from auth.main import get_hashed_password
 
 load_dotenv()
 
 metadata = MetaData()
 user_table = Table('user', metadata,
                    Column('id', Integer, primary_key=True),
+                   Column('username', String(255), unique=True),
                    Column('email', String(255), unique=True),
-                   Column('password', String(255)))
+                   Column('hashed_password', String(255)))
 
 
 @pytest.fixture(scope="session")
@@ -32,8 +34,13 @@ def test_create_database():
     metadata.create_all(engine)  # Create tables in the test database
 
     with engine.connect() as conn:
+        # Hash the password before inserting
+        hashed_password = get_hashed_password("Admin!23")
+
         # Inserting the test data
-        conn.execute(user_table.insert(), [{"email": "alice@email.com", "password": "Admin!23"}])
+        conn.execute(user_table.insert(),
+                     [{"username": "alice", "email": "alice@email.com", "hashed_password": hashed_password}])
+
         # check if the data is inserted
         result = conn.execute(user_table.select()).fetchall()
         conn.commit()
@@ -59,7 +66,7 @@ def test_validate_test_database_state(test_create_database):
         assert len(result) == 1  # Assuming only one entry is inserted
         user = result[0]
         assert user.email == "alice@email.com"
-        assert user.password == "Admin!23"
+        assert verify_password("Admin!23", user.hashed_password)
 
 
 def get_access_token(client, username, password):

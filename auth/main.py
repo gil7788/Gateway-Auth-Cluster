@@ -1,35 +1,42 @@
+import os
+import bcrypt
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
+from sqlalchemy.orm import sessionmaker, Session
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
+from jose import JWTError, jwt, ExpiredSignatureError
 from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel
 
-SECRET_KEY = "YOUR_SECRET_KEY"
-ALGORITHM = "HS256"
+# Environment variables
+SECRET_KEY = os.getenv("SECRET_KEY", "YOUR_SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+DATABASE_URL = os.getenv("DATABASE_URL", "mysql://alice:Admin!23@localhost:3306/auth")
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Database setup
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+metadata = MetaData()
+
+# User table
+user_table = Table('user', metadata,
+                   Column('id', Integer, primary_key=True),
+                   Column('username', String(255), unique=True),
+                   Column('email', String(255), unique=True),
+                   Column('hashed_password', String(255)))
+
+# FastAPI app
 app = FastAPI()
 
+# OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 class User(BaseModel):
     username: str
     email: Optional[str] = None
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = None
-
-
-class UserInDB(User):
-    password: str
-
-
-fake_db = {
-    "alice": {
-        "username": "alice",
-        "email": "alice@email.com",
-        "password": "Admin!23",
-    }
-}
 
 
 class Token(BaseModel):
@@ -37,11 +44,32 @@ class Token(BaseModel):
     token_type: str
 
 
-class TokenData(BaseModel):
-    username: Optional[str] = None
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+def get_user(db, username: str):
+    return db.query(user_table).filter(user_table.c.username == username).first()
+
+
+def verify_password(plain_password, hashed_password):
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+
+def get_hashed_password(password):
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+
+def authenticate_user(db, username: str, password: str):
+    user = get_user(db, username)
+    if not user or not verify_password(password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
+    return user
 
 
 # Define the function to create access tokens
@@ -56,27 +84,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-# Define the function to authenticate users
-def authenticate_user(fake_db, username: str, password: str):
-    if username not in fake_db:
-        return False
-    user = UserInDB(**fake_db[username])
-    if not user:
-        return False
-    if password != user.password:
-        return False
-    return user
-
-
-# Define the function to get users
-def get_user(fake_db, username: str):
-    if username in fake_db:
-        user_dict = fake_db[username]
-        return UserInDB(**user_dict)
-
-
-# Define the function to get the current user
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -87,28 +95,18 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
+        user = get_user(db, username)
+        if user is None:
+            raise credentials_exception
+        return user
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_db, username=token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
 
 
 # Define the function to get the current active user
 def get_current_active_user(current_user: User = Depends(get_current_user)):
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
-
-
-# Define the function to get the current active superuser
-def get_current_active_superuser(current_user: User = Depends(get_current_active_user)):
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=400, detail="The user doesn't have enough privileges"
-        )
     return current_user
 
 
@@ -118,14 +116,8 @@ def get_database_url(username, password, host, port, database):
 
 # Define the route to login users
 @app.post("/token", response_model=Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(fake_db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = authenticate_user(db, form_data.username, form_data.password)
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
