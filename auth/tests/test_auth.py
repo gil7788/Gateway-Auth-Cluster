@@ -3,22 +3,18 @@ import pytest
 from datetime import datetime, timedelta
 
 from jose import jwt
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
+from sqlalchemy import create_engine
 
 from sqlalchemy_utils import database_exists, create_database, drop_database
 from fastapi.testclient import TestClient
-from auth.main import app, get_database_url, create_access_token, SECRET_KEY, ALGORITHM, verify_password
 from dotenv import load_dotenv
-from auth.main import get_hashed_password
+from app import app
+from app.config import SECRET_KEY, ALGORITHM
+from app.security import verify_password, create_access_token
+from app.utils import get_hashed_password, get_database_url
+from app.models import metadata, user_table
 
 load_dotenv()
-
-metadata = MetaData()
-user_table = Table('user', metadata,
-                   Column('id', Integer, primary_key=True),
-                   Column('username', String(255), unique=True),
-                   Column('email', String(255), unique=True),
-                   Column('hashed_password', String(255)))
 
 
 @pytest.fixture(scope="session")
