@@ -1,7 +1,7 @@
 from typing import Optional
 
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from jose import jwt
 from datetime import datetime, timedelta
 from .config import SECRET_KEY, ALGORITHM
 import bcrypt

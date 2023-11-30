@@ -9,17 +9,22 @@ from ..crud import authenticate_user
 from ..schemas import User, Token
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from ..security import create_access_token
+import logging
+
+logger = logging.getLogger("uvicorn")
 
 router = APIRouter()
 
 
 @router.get("/")
 async def root():
+    logging.info("[AUTH] Auth Service is active")
     return {"message": "Auth Service is active"}
 
 
 @router.post("/token", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    logger.info("[AUTH] Token request for user: %s", form_data.username)
     user = authenticate_user(db, form_data.username, form_data.password)
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -30,4 +35,5 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
 @router.get("/users/me/", response_model=User)
 def read_users_me(current_user: User = Depends(get_current_active_user)):
+    logger.info("[AUTH] User request for user: %s", current_user.username)
     return current_user
