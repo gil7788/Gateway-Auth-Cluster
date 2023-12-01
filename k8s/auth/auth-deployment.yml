@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-deployment
+  namespace: converter-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: converter-auth
+  template:
+    metadata:
+      labels:
+        app: converter-auth
+    spec:
+      containers:
+        - name: converter-auth
+          image: gil7788/converter-auth:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-password
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-configmap
+                  key: environment
+            - name: MYSQL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-configmap
+                  key: mysql-host
+            - name: MYSQL_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-configmap
+                  key: mysql-port
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-configmap
+                  key: mysql-database
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: secret-key
+            - name: ALGORITHM
+              valueFrom:
+                configMapKeyRef:
+                  name: mysql-configmap
+                  key: algorithm
+            - name: ACCESS_TOKEN_EXPIRE_MINUTES
+              valueFrom:
+                  configMapKeyRef:
+                    name: mysql-configmap
+                    key: access-token-expire-minutes

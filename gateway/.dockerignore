@@ -1,0 +1,25 @@
+# Python cache:
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment:
+venv/
+
+# Test directories and files:
+tests/
+*.test.*
+*.spec.*
+
+# OS specific files:
+.DS_Store
+Thumbs.db
+
+# Logs and data:
+*.log
+*.sqlite
+
+# Local env variables:
+.env
