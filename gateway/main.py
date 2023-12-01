@@ -18,4 +18,5 @@ async def auth_login(request: Request):
             response = await client.post(f"{AUTH_SERVICE_URL}/token", data=await request.form())
             return response.json()
         except httpx.RequestError as exc:
-            raise HTTPException(status_code=503, detail="Auth service is unavailable") from exc
+            print(f"Error occurred: {exc}")
+            raise HTTPException(status_code=503, detail=f"{exc}") from exc

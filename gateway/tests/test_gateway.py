@@ -32,7 +32,7 @@ def test_root_endpoint(client):
     "test_input,expected_status,expected_response",
     [
         ({"username": "test", "password": "test"}, 200, {"token": "testtoken"}),
-        ({"username": "wrong", "password": "credentials"}, 503, {"detail": "Auth service is unavailable"}),
+        ({"username": "wrong", "password": "credentials"}, 503, {"detail": "Auth service unavailable"}),
     ],
 )
 def test_auth_login(client, mock_async_client_post, test_input, expected_status, expected_response):
