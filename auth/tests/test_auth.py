@@ -9,16 +9,14 @@ from sqlalchemy_utils import database_exists, create_database, drop_database
 from fastapi.testclient import TestClient
 from dotenv import load_dotenv
 from app import app
-from app.config import SECRET_KEY, ALGORITHM
 from app.security import verify_password, create_access_token
 from app.utils import get_hashed_password, get_database_url
 from app.models import metadata, user_table
 
-load_dotenv()
-
 
 @pytest.fixture(scope="session")
 def test_create_database():
+    load_dotenv()
     test_database_url = get_database_url(os.environ['MYSQL_USER'], os.environ['MYSQL_PASSWORD'],
                                          os.environ['MYSQL_HOST'], os.environ['MYSQL_PORT'], 'test_auth')
     engine = create_engine(test_database_url)
@@ -108,7 +106,7 @@ def test_read_current_user(client, test_create_database):
 def test_create_access_token():
     test_data = {"sub": "testuser"}
     token = create_access_token(test_data)
-    decoded_data = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    decoded_data = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
 
     assert decoded_data["sub"] == "testuser"
     assert "exp" in decoded_data
@@ -121,7 +119,7 @@ def test_create_access_token_with_custom_expiration():
     test_data = {"sub": "testuser"}
     custom_expires_delta = timedelta(minutes=30)
     token = create_access_token(test_data, expires_delta=custom_expires_delta)
-    decoded_data = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    decoded_data = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
 
     expected_expiration = datetime.utcnow() + custom_expires_delta
     token_expiration = datetime.utcfromtimestamp(decoded_data["exp"])

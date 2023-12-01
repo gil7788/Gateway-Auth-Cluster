@@ -1,8 +1,10 @@
+import os
+
 from fastapi import Depends, HTTPException
 from jose import jwt, ExpiredSignatureError, JWTError
 from starlette import status
 
-from .config import DATABASE_URL, SECRET_KEY, ALGORITHM
+from . import utils
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
@@ -10,10 +12,33 @@ from sqlalchemy.orm import sessionmaker, Session
 from .security import oauth2_scheme
 from .schemas import User
 from .crud import get_user
+from dotenv import load_dotenv
+
+
+def load_configuration():
+    app_env = os.getenv('APP_ENV', 'development')
+    if app_env == 'development':
+        # Load .env file in development
+        load_dotenv()
+
+    required_env_vars = \
+        ["MYSQL_USER", "MYSQL_PASSWORD", "MYSQL_HOST", "MYSQL_PORT", "MYSQL_DATABASE", "SECRET_KEY", "ALGORITHM"]
+    for var in required_env_vars:
+        if not os.getenv(var):
+            logger.error(f"[Dependencies] Missing required environment variable: {var}")
+            raise EnvironmentError(f"[Dependencies] Missing required environment variable: {var}")
+
+
+load_configuration()
+
 
 logger = logging.getLogger("uvicorn")
 
-engine = create_engine(DATABASE_URL)
+database_url = utils.get_database_url(os.getenv("MYSQL_USER"), os.getenv("MYSQL_PASSWORD"),
+                                      os.getenv("MYSQL_HOST"), os.getenv("MYSQL_PORT"),
+                                      os.getenv("MYSQL_DATABASE"))
+
+engine = create_engine(database_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -34,7 +59,7 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=[os.getenv("ALGORITHM")])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception

@@ -1,5 +1,8 @@
+-- This is a seperate file to be used for initializing the database.
+-- It is not used by the production itself, but can be used to set up databases for testing locally.
+
 -- Create the user 'alice' and set her password
-CREATE USER IF NOT EXISTS 'alice'@'localhost' IDENTIFIED BY 'Admin!23';
+CREATE USER IF NOT EXISTS 'alice'@'%' IDENTIFIED BY 'Admin!23';
 
 -- Create the 'auth' database
 CREATE DATABASE IF NOT EXISTS auth;
@@ -8,8 +11,8 @@ CREATE DATABASE IF NOT EXISTS auth;
 CREATE DATABASE IF NOT EXISTS test_auth;
 
 -- Grant all privileges on the 'auth' and 'test_auth' databases to 'alice'
-GRANT ALL PRIVILEGES ON auth.* TO 'alice'@'localhost';
-GRANT ALL PRIVILEGES ON test_auth.* TO 'alice'@'localhost';
+GRANT ALL PRIVILEGES ON auth.* TO 'alice'@'%';
+GRANT ALL PRIVILEGES ON test_auth.* TO 'alice'@'%';
 
 -- Apply the changes made by the GRANT statement
 FLUSH PRIVILEGES;
